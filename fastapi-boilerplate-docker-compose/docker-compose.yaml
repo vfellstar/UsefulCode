@@ -1,0 +1,66 @@
+version: '3.8'
+
+services:
+  weaviate:
+    command:
+    - --host
+    - 0.0.0.0
+    - --port
+    - '8080'
+    - --scheme
+    - http
+    image: semitechnologies/weaviate:1.18.3
+    ports:
+    - 8080:8080
+    restart: on-failure:0
+    environment:
+      TRANSFORMERS_INFERENCE_API: 'http://t2v-transformers:8080'
+      QUERY_DEFAULTS_LIMIT: 25
+      AUTHENTICATION_ANONYMOUS_ACCESS_ENABLED: 'true'
+      PERSISTENCE_DATA_PATH: '/var/lib/weaviate'
+      DEFAULT_VECTORIZER_MODULE: 'text2vec-transformers'
+      ENABLE_MODULES: 'text2vec-transformers'
+      CLUSTER_HOSTNAME: 'node1'
+    logging:
+      driver: "none"
+
+  t2v-transformers:
+    image: semitechnologies/transformers-inference:sentence-transformers-multi-qa-MiniLM-L6-cos-v1
+    environment:
+      ENABLE_CUDA: '0'
+    logging:
+      driver: "none"
+
+  redis:
+    image: redis:6-alpine
+    logging:
+      driver: "none"
+
+  web:
+    build: ./app
+    ports:
+      - 5000:8000
+    command: uvicorn app:app --host 0.0.0.0 --reload
+    # gunicorn -k uvicorn.workers.UvicornWorker -w 2 --log-level debug --timeout 600 --bind 0.0.0.0:8000 --certfile=etc/certificates/unigwdevbundlecrt.pem --keyfile=etc/certificates/unigw.dev.bundle.key "main:app" --reload # ./startup_web.sh
+    # uvicorn main:app --host 0.0.0.0 --ssl-certfile etc/certificates/unigwdevbundlecrt.pem --ssl-keyfile etc/certificates/unigw.dev.bundle.key --reload 
+    # gunicorn -c gunicorn.conf.py main:app --reload
+    volumes:
+      - ./app:/usr/src/app
+
+    environment:
+      - WEAVIATE_HOST=http://weaviate:8080
+      - REDIS_HOST=redis
+      - REDIS_PORT=6379
+      - REDIS_DB=0
+      
+    depends_on:
+      - redis
+      - weaviate
+
+
+volumes:
+  redis_data:
+    external: false
+...
+
+  
