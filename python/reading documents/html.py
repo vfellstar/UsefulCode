@@ -2,10 +2,9 @@ import re
 from bs4 import BeautifulSoup
 from typing import Union
 
-from modules.document_modules.file_reading.file_reading_abstract import FileReadingAbstract
 
 
-class HTMLReader(FileReadingAbstract):
+class HTMLReader():
     
     def get_text(self, filepath:str):
         with open(filepath, "r") as f:
